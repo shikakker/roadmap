@@ -11,7 +11,7 @@ test('Auth0 userinfo must fail closed on non-success responses', () => {
 })
 
 test('authenticated identity must include a non-empty subject', () => {
-  assert.match(compact, /typeof user\.sub !== ['"]string['"]/)
+  assert.match(compact, /typeof user\?\.sub !== ['"]string['"]/)
   assert.match(compact, /user\.sub\.trim\(\)/)
 })
 
