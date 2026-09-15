@@ -5,6 +5,8 @@ on:
     branches: [portfolio-improvements-2026-08]
     paths:
       - .github/workflows/sync-lockfile.yml
+      - package.json
+      - tests/runtime-security.test.mjs
 
 permissions:
   contents: write
