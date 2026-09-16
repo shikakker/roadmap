@@ -3,6 +3,8 @@ import { FEATURE_TYPE } from 'lib/const'
 import redis, { databaseName } from 'lib/redis'
 import authenticate from 'lib/authenticate'
 
+const excludedUserFields = new Set(['nickname', 'email', 'updated_at'])
+
 export default authenticate(async (req, res) => {
   if (req.method !== 'POST') {
     res.setHeader('Allow', 'POST')
@@ -18,7 +20,9 @@ export default authenticate(async (req, res) => {
       return res.status(400).json({ error: 'INVALID_TITLE' })
     }
 
-    const { nickname, email, updated_at, ...user } = req.user
+    const user = Object.fromEntries(
+      Object.entries(req.user).filter(([key]) => !excludedUserFields.has(key))
+    )
     const feature = {
       title: title.trim(),
       createdAt: Date.now(),
