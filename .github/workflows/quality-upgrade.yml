@@ -32,7 +32,7 @@ jobs:
           const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'))
           pkg.scripts = { ...pkg.scripts, lint: 'eslint . --max-warnings=0' }
           fs.writeFileSync('package.json', `${JSON.stringify(pkg, null, 2)}\n`)
-          fs.writeFileSync('eslint.config.mjs', `import nextVitals from 'eslint-config-next/core-web-vitals'\nimport nextTypeScript from 'eslint-config-next/typescript'\n\nexport default [\n  ...nextVitals,\n  ...nextTypeScript,\n  { ignores: ['.next/**', 'node_modules/**', 'next-env.d.ts'] },\n]\n`)
+          fs.writeFileSync('eslint.config.mjs', `import nextVitals from 'eslint-config-next/core-web-vitals.js'\nimport nextTypeScript from 'eslint-config-next/typescript.js'\n\nexport default [\n  ...nextVitals,\n  ...nextTypeScript,\n  { ignores: ['.next/**', 'node_modules/**', 'next-env.d.ts'] },\n]\n`)
           NODE
           pnpm install
       - name: Audit full dependency graph
