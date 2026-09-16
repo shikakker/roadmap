@@ -1,0 +1,54 @@
+name: Upgrade roadmap quality gate
+
+on:
+  push:
+    branches: [portfolio-improvements-2026-08]
+    paths:
+      - .github/workflows/quality-upgrade.yml
+
+permissions:
+  contents: write
+
+jobs:
+  upgrade:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: portfolio-improvements-2026-08
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.9
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: pnpm
+      - name: Add explicit Next.js lint boundary
+        run: |
+          pnpm add -D --save-exact eslint@9.39.5 eslint-config-next@15.5.24
+          node <<'NODE'
+          const fs = require('node:fs')
+          const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'))
+          pkg.scripts = { ...pkg.scripts, lint: 'eslint . --max-warnings=0' }
+          fs.writeFileSync('package.json', `${JSON.stringify(pkg, null, 2)}\n`)
+          fs.writeFileSync('eslint.config.mjs', `import nextVitals from 'eslint-config-next/core-web-vitals'\nimport nextTypeScript from 'eslint-config-next/typescript'\n\nexport default [\n  ...nextVitals,\n  ...nextTypeScript,\n  { ignores: ['.next/**', 'node_modules/**', 'next-env.d.ts'] },\n]\n`)
+          NODE
+          pnpm install
+      - name: Audit full dependency graph
+        run: pnpm audit --audit-level high
+      - run: pnpm test
+      - run: pnpm run typecheck
+      - run: pnpm run lint
+      - run: pnpm run build
+      - name: Commit verified lint and tooling state
+        run: |
+          git config user.name 'Egor Denisov'
+          git config user.email 'designer.egor@ya.ru'
+          git add package.json pnpm-lock.yaml eslint.config.mjs
+          if git diff --cached --quiet; then
+            echo 'No quality-gate changes to commit'
+            exit 0
+          fi
+          git commit -m 'ci: add verified roadmap lint and full audit gate'
+          git push origin HEAD:portfolio-improvements-2026-08
