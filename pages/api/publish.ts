@@ -3,36 +3,71 @@ import redis, { databaseName } from 'lib/redis'
 import authenticate from 'lib/authenticate'
 
 export default authenticate(async (req, res) => {
+  if (req.method !== 'POST') {
+    res.setHeader('Allow', 'POST')
+    return res.status(405).json({ error: 'METHOD_NOT_ALLOWED' })
+  }
+
+  const adminId = process.env.NEXT_PUBLIC_AUTH0_ADMIN_ID
+  if (!adminId) {
+    return res.status(503).json({ error: 'ADMIN_NOT_CONFIGURED' })
+  }
+
+  if (req.user.sub !== adminId) {
+    return res.status(403).json({ error: 'FORBIDDEN' })
+  }
+
+  const { title, createdAt, user, status } = req.body ?? {}
+  if (
+    typeof title !== 'string' ||
+    !title.trim() ||
+    typeof createdAt !== 'number' ||
+    !Number.isFinite(createdAt) ||
+    !user ||
+    typeof user !== 'object' ||
+    typeof status !== 'string' ||
+    !status.trim()
+  ) {
+    return res.status(400).json({ error: 'INVALID_FEATURE' })
+  }
+
+  const feature = { title, createdAt, user, status }
+  const featureMember = JSON.stringify(feature)
+
   try {
-    if (req.user.sub !== process.env.NEXT_PUBLIC_AUTH0_ADMIN_ID) {
-      throw new Error('Unauthorized')
+    const score = await redis.zscore(databaseName, featureMember)
+    if (score === null) {
+      return res.status(404).json({ error: 'FEATURE_NOT_FOUND' })
     }
 
-    const { title, createdAt, user, status } = req.body
+    const removed = await redis.zrem(databaseName, featureMember)
+    if (!removed) {
+      return res.status(409).json({ error: 'FEATURE_CHANGED' })
+    }
 
-    const FEATURE = { title, createdAt, user, status }
+    try {
+      await redis.zadd(
+        databaseName,
+        { nx: true },
+        {
+          score,
+          member: JSON.stringify({
+            ...feature,
+            status: FEATURE_TYPE.RELEASE
+          })
+        }
+      )
+    } catch {
+      await redis.zadd(
+        databaseName,
+        { nx: true },
+        { score, member: featureMember }
+      ).catch(() => undefined)
+      return res.status(500).json({ error: 'PUBLISH_FAILED' })
+    }
 
-    const score = await redis.zscore(databaseName, JSON.stringify(FEATURE))
-    console.log('score', score)
-
-    const isRemove = await redis.zrem(databaseName, JSON.stringify(FEATURE))
-    console.log('isRemove', isRemove)
-    if (!isRemove) throw new Error('Failed to remove feature')
-
-    await redis.zadd(
-      databaseName,
-      { nx: true },
-      {
-        score,
-        member: JSON.stringify({
-          ...FEATURE,
-          status: FEATURE_TYPE.RELEASE
-        })
-      }
-    )
-
-    res.json({ body: 'success' })
-  } catch (error) {
-    res.status(400).json({ error: error.message })
+    return res.json({ body: 'success' })
+  } catch {
+    return res.status(500).json({ error: 'PUBLISH_FAILED' })
   }
 })
