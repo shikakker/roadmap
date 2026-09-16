@@ -55,3 +55,12 @@ test('remove reports not-found separately from provider failure', () => {
   assert.match(source, /REMOVE_FAILED/)
   assert.doesNotMatch(source, /console\.log/)
 })
+
+test('public list endpoint is GET-only and never leaks raw Redis errors', () => {
+  const source = read('pages/api/list.ts')
+  assert.match(source, /req\.method\s*!==\s*['"]GET['"]/)
+  assert.match(source, /setHeader\(['"]Allow['"],\s*['"]GET['"]\)/)
+  assert.match(source, /METHOD_NOT_ALLOWED/)
+  assert.match(source, /LIST_FAILED/)
+  assert.doesNotMatch(source, /json\(\{\s*error\s*\}\)/)
+})
