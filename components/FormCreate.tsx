@@ -1,8 +1,9 @@
 import { useAuth0 } from '@auth0/auth0-react'
 
 export default function FormCreate({ onSubmitNewFeature, inputNewFeature }) {
-  const { user, isLoading, isAuthenticated, loginWithRedirect, logout } =
-    useAuth0()
+  const { user, isLoading, isAuthenticated, loginWithRedirect } = useAuth0()
+  const avatarLabel = user?.name || user?.nickname || 'User'
+  const avatarInitial = avatarLabel.charAt(0).toUpperCase()
 
   const onSubmit = (e) => {
     e.preventDefault()
@@ -13,18 +14,19 @@ export default function FormCreate({ onSubmitNewFeature, inputNewFeature }) {
 
   return isAuthenticated ? (
     <form className="flex items-center space-x-4" onSubmit={onSubmit}>
-      <img src={user.picture} alt={user.name} width={40} className="rounded" />
+      <span
+        aria-label={`${avatarLabel} avatar`}
+        className="flex h-10 w-10 items-center justify-center rounded bg-zinc-200 font-semibold text-zinc-700 dark:bg-zinc-700 dark:text-zinc-100"
+        role="img"
+      >
+        {avatarInitial}
+      </span>
       <input
         className="form-input"
         type="text"
         ref={inputNewFeature}
         placeholder="Enter a new feature request?"
       />
-      {/*isAuthenticated && (
-        <button className="button" type="button" onClick={() => logout()}>
-          Logout
-        </button>
-      )*/}
     </form>
   ) : (
     <div
