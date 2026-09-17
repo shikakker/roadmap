@@ -27,8 +27,13 @@ export default authenticate(async (req, res) => {
       return res.status(409).json({ error: 'ALREADY_VOTED' })
     }
 
-    const data = await redis.zincrby(databaseName, 1, FEATURE)
-    return res.json(data)
+    try {
+      const data = await redis.zincrby(databaseName, 1, FEATURE)
+      return res.json(data)
+    } catch {
+      await redis.srem('s:' + FEATURE, req.user.sub).catch(() => undefined)
+      return res.status(500).json({ error: 'VOTE_FAILED' })
+    }
   } catch {
     return res.status(500).json({ error: 'VOTE_FAILED' })
   }
