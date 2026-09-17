@@ -23,3 +23,12 @@ test('duplicate votes return a conflict instead of a generic bad request', () =>
   assert.match(compact, /ALREADY_VOTED/)
   assert.match(compact, /status\(409\)/)
 })
+
+test('failed score increments release the voter marker so a legitimate retry is possible', () => {
+  const incrementVote = source.indexOf('redis.zincrby(databaseName, 1, FEATURE)')
+  const rollbackVoter = source.indexOf("redis.srem('s:' + FEATURE, req.user.sub)")
+
+  assert.ok(incrementVote >= 0, 'missing score increment')
+  assert.ok(rollbackVoter > incrementVote, 'failed score increment must compensate the voter marker')
+  assert.match(compact, /catch\s*\{[^}]*redis\.srem/s)
+})
