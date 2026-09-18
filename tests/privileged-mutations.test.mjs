@@ -64,3 +64,16 @@ test('public list endpoint is GET-only and never leaks raw Redis errors', () => 
   assert.match(source, /LIST_FAILED/)
   assert.doesNotMatch(source, /json\(\{\s*error\s*\}\)/)
 })
+
+
+test('publish restores the source feature when release insertion is rejected by NX', () => {
+  const source = read('pages/api/publish.ts')
+  assert.match(source, /const added = await redis\.zadd/)
+  assert.match(source, /if \(!added\)/)
+  assert.match(source, /await redis\.zadd\([\s\S]*member: featureMember/)
+  assert.match(source, /FEATURE_CONFLICT/)
+  const remove = source.indexOf('redis.zrem')
+  const releaseAdd = source.indexOf('const added = await redis.zadd', remove)
+  const restore = source.indexOf('member: featureMember', releaseAdd)
+  assert.ok(remove >= 0 && releaseAdd > remove && restore > releaseAdd)
+})
