@@ -7,7 +7,7 @@ Vercel project: `roadmap` (`prj_47u0gv1D0rnOiZs4WvZW7mNRkhPp`).
 
 Product boundary: public roadmap backed by Upstash Redis with Auth0-authenticated voting and privileged create/publish/remove mutations. This branch hardens authentication, mutation integrity, dependency/tooling security and deterministic release verification; it is not automatically promoted to production.
 
-Overall status: **PARTIAL — exact repository Quality is GREEN; exact Vercel deployment is still blocked by Hobby deployment-rate capacity and provider-backed Auth0/Redis browser E2E remains external.**
+Overall status: **PARTIAL — exact repository Quality is GREEN and exact runtime Vercel deployment is READY; provider-backed Auth0/Redis and interactive browser E2E remain external.**
 
 ## T01–T10 — Core tasks
 
@@ -47,7 +47,7 @@ Overall status: **PARTIAL — exact repository Quality is GREEN; exact Vercel de
 | F02 | DONE | Feature creation with bounded title validation. |
 | F03 | DONE | Authenticated voting behind fail-closed identity verification. |
 | F04 | DONE | Duplicate-vote prevention plus rollback of the voter marker if score persistence fails. |
-| F05 | DONE | Privileged publish with admin/config/payload/existence checks and compensating restore on release-write failure. |
+| F05 | DONE | Privileged publish with admin/config/payload/existence checks plus compensation on provider failure or NX release-member conflict. |
 | F06 | DONE | Privileged remove with admin/config/payload/not-found/provider semantics. |
 | F07 | DONE | Auth0 sign-in integration retained at compile/runtime boundary. |
 | F08 | BLOCKED | Hosted provider-error UX requires intended Auth0/Redis environment smoke. |
@@ -87,9 +87,18 @@ Vercel exact commit status for `7cbf8e65...` is still `Deployment rate limited` 
 ## Project checkpoint
 
 **PROJECT:** `roadmap`  
-**Fixed this pass:** failed Redis score increments no longer strand an authenticated user in an uncounted `ALREADY_VOTED` state.  
-**Verification:** focused **4/4 PASS**; exact-head full Quality **PASS**; Vercel exact head = RATE-LIMITED; provider/browser E2E = NOT VERIFIED.  
-**Git:** `portfolio-improvements-2026-08`, Draft PR #1; verified runtime head `7cbf8e65...`.  
+**Fixed this pass:** vote-write compensation remains, and publish can no longer report success/data-loss when the release member already exists under `ZADD NX`.  
+**Verification:** exact-head full Quality **PASS**; Vercel runtime deployment **READY**; provider/browser E2E = NOT VERIFIED.  
+**Git:** `portfolio-improvements-2026-08`, Draft PR #1; verified runtime head `382b7f7...`.  
 **Status:** **PARTIAL**.
 
 No merge, production promotion, Auth0/Redis credential mutation, live roadmap data mutation, history rewrite or billing action has been performed.
+
+
+### Latest publish-integrity slice
+
+- `663c046d4a61ce3019fbafcc819be03776394b84` — regression first: if release `ZADD NX` adds nothing, the removed source feature must be restored and the API must return a conflict.
+- `382b7f7e51f356fbc22d71f30c204be62fbfd45e` — checks the `ZADD NX` return value; on conflict, best-effort restores the source member with its prior score and returns `409 FEATURE_CONFLICT`.
+- Exact-head Quality run `35332490079`, job `105559754577`: **PASS** with real executed frozen install, production audit, full audit, tests, typecheck, zero-warning lint and production build.
+- Exact-head Vercel deployment `dpl_GNpFgVwuKixUqPKAfiYCNgpZQqhd`: **READY**. Build log confirms Next compiled, static pages generated, serverless functions created and outputs deployed.
+- Hosted browser fetch is **NOT VERIFIED** from the available web runner because the preview URL is inaccessible there; no live Auth0/Redis mutation was attempted.
