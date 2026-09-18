@@ -1,3 +1,4 @@
+import Image from 'next/image'
 import { useTheme } from 'next-themes'
 
 export default function Header() {
@@ -6,10 +7,12 @@ export default function Header() {
   return (
     <header className="pt-20 mb-12">
       <div className="flex justify-center">
-        <img
+        <Image
           src={resolvedTheme === 'light' ? '/logo-light.svg' : '/logo-dark.svg'}
           alt="Upstash"
           width={140}
+          height={41}
+          priority
         />
       </div>
 

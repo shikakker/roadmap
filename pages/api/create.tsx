@@ -3,21 +3,28 @@ import { FEATURE_TYPE } from 'lib/const'
 import redis, { databaseName } from 'lib/redis'
 import authenticate from 'lib/authenticate'
 
-export default authenticate(async (req, res) => {
-  try {
-    const { title } = req.body
+const excludedUserFields = new Set(['nickname', 'email', 'updated_at'])
 
-    let schema = string().required().trim().min(10).max(70)
+export default authenticate(async (req, res) => {
+  if (req.method !== 'POST') {
+    res.setHeader('Allow', 'POST')
+    return res.status(405).json({ error: 'METHOD_NOT_ALLOWED' })
+  }
+
+  try {
+    const { title } = req.body ?? {}
+    const schema = string().required().trim().min(10).max(70)
     const isValid = await schema.isValid(title)
 
     if (!isValid) {
-      throw new Error('Min 10 and Max 70 characters please.')
+      return res.status(400).json({ error: 'INVALID_TITLE' })
     }
 
-    const { nickname, email, updated_at, ...user } = req.user
-
-    const FEATURE = {
-      title,
+    const user = Object.fromEntries(
+      Object.entries(req.user).filter(([key]) => !excludedUserFields.has(key))
+    )
+    const feature = {
+      title: title.trim(),
       createdAt: Date.now(),
       user,
       status: FEATURE_TYPE.NEW
@@ -26,11 +33,11 @@ export default authenticate(async (req, res) => {
     await redis.zadd(
       databaseName,
       { nx: true },
-      { score: 0, member: JSON.stringify(FEATURE) }
+      { score: 0, member: JSON.stringify(feature) }
     )
 
-    res.json({ body: 'success' })
-  } catch (error) {
-    res.status(400).json({ error })
+    return res.status(201).json({ body: 'success' })
+  } catch {
+    return res.status(500).json({ error: 'CREATE_FAILED' })
   }
 })

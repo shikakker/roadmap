@@ -1,18 +1,25 @@
 import redis, { databaseName } from 'lib/redis'
 
-export default async (req, res) => {
+async function listFeatures(req, res) {
+  if (req.method !== 'GET') {
+    res.setHeader('Allow', 'GET')
+    return res.status(405).json({ error: 'METHOD_NOT_ALLOWED' })
+  }
+
   try {
     const data = await redis.zrange(databaseName, 0, -1, { withScores: true })
 
-    let result = []
+    const result = []
     for (let i = 0; i < data.length - 1; i += 2) {
-      let item = data[i]
+      const item = data[i]
       item['score'] = data[i + 1]
       result.push(item)
     }
 
-    res.json(result)
-  } catch (error) {
-    res.status(400).json({ error })
+    return res.status(200).json(result)
+  } catch {
+    return res.status(500).json({ error: 'LIST_FAILED' })
   }
 }
+
+export default listFeatures
