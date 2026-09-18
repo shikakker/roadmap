@@ -46,7 +46,7 @@ export default authenticate(async (req, res) => {
     }
 
     try {
-      await redis.zadd(
+      const added = await redis.zadd(
         databaseName,
         { nx: true },
         {
@@ -57,6 +57,15 @@ export default authenticate(async (req, res) => {
           })
         }
       )
+
+      if (!added) {
+        await redis.zadd(
+          databaseName,
+          { nx: true },
+          { score, member: featureMember }
+        ).catch(() => undefined)
+        return res.status(409).json({ error: 'FEATURE_CONFLICT' })
+      }
     } catch {
       await redis.zadd(
         databaseName,
