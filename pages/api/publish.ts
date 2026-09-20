@@ -66,6 +66,8 @@ export default authenticate(async (req, res) => {
         ).catch(() => undefined)
         return res.status(409).json({ error: 'FEATURE_CONFLICT' })
       }
+
+      await redis.del('s:' + featureMember).catch(() => undefined)
     } catch {
       await redis.zadd(
         databaseName,
