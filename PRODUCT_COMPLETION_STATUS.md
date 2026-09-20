@@ -102,3 +102,10 @@ No merge, production promotion, Auth0/Redis credential mutation, live roadmap da
 - Exact-head Quality run `35332490079`, job `105559754577`: **PASS** with real executed frozen install, production audit, full audit, tests, typecheck, zero-warning lint and production build.
 - Exact-head Vercel deployment `dpl_GNpFgVwuKixUqPKAfiYCNgpZQqhd`: **READY**. Build log confirms Next compiled, static pages generated, serverless functions created and outputs deployed.
 - Hosted browser fetch is **NOT VERIFIED** from the available web runner because the preview URL is inaccessible there; no live Auth0/Redis mutation was attempted.
+\n\n## 2026-09-20 continuation
+
+- P1 vote integrity: released roadmap items now return `VOTING_CLOSED` instead of accepting votes under a new serialized member.
+- Vote identity validation now requires finite numeric `createdAt` and an object `user`.
+- Publish/remove clean obsolete Redis voter-set state after a successful mutation.
+- `tests/vote-integrity.test.mjs` guards release-vote closure and voter-set cleanup.
+\n
