@@ -39,6 +39,7 @@ export default authenticate(async (req, res) => {
       return res.status(404).json({ error: 'FEATURE_NOT_FOUND' })
     }
 
+    await redis.del('s:' + feature).catch(() => undefined)
     return res.json({ body: 'success' })
   } catch {
     return res.status(500).json({ error: 'REMOVE_FAILED' })
