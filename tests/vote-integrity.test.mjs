@@ -32,3 +32,23 @@ test('failed score increments release the voter marker so a legitimate retry is 
   assert.ok(rollbackVoter > incrementVote, 'failed score increment must compensate the voter marker')
   assert.match(compact, /catch\s*\{[^}]*redis\.srem/s)
 })
+
+
+test('released features cannot be voted through the API', () => {
+  assert.match(source, /FEATURE_TYPE\.NEW/)
+  assert.match(compact, /status !== FEATURE_TYPE\.NEW/)
+  assert.match(compact, /VOTING_CLOSED/)
+})
+
+test('feature identity validation requires finite numeric createdAt and an object user', () => {
+  assert.match(compact, /typeof createdAt !== ['"]number['"]/)
+  assert.match(compact, /Number\.isFinite\(createdAt\)/)
+  assert.match(compact, /typeof user !== ['"]object['"]/)
+})
+
+test('publish and remove clean obsolete voter-set state', () => {
+  const publish = fs.readFileSync('pages/api/publish.ts', 'utf8')
+  const remove = fs.readFileSync('pages/api/remove.ts', 'utf8')
+  assert.match(publish, /redis\.del\(['"]s:['"] \+ featureMember\)/)
+  assert.match(remove, /redis\.del\(['"]s:['"] \+ feature\)/)
+})
