@@ -1,5 +1,6 @@
 import redis, { databaseName } from 'lib/redis'
 import authenticate from 'lib/authenticate'
+import { FEATURE_TYPE } from 'lib/const'
 
 export default authenticate(async (req, res) => {
   if (req.method !== 'POST') {
@@ -10,8 +11,20 @@ export default authenticate(async (req, res) => {
   try {
     const { title, createdAt, user, status } = req.body ?? {}
 
-    if (typeof title !== 'string' || !title.trim() || !createdAt || typeof status !== 'string') {
+    if (
+      typeof title !== 'string' ||
+      !title.trim() ||
+      typeof createdAt !== 'number' ||
+      !Number.isFinite(createdAt) ||
+      !user ||
+      typeof user !== 'object' ||
+      typeof status !== 'string'
+    ) {
       return res.status(400).json({ error: 'INVALID_FEATURE' })
+    }
+
+    if (status !== FEATURE_TYPE.NEW) {
+      return res.status(409).json({ error: 'VOTING_CLOSED' })
     }
 
     const FEATURE = JSON.stringify({ title, createdAt, user, status })
