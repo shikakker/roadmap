@@ -66,14 +66,15 @@ test('public list endpoint is GET-only and never leaks raw Redis errors', () => 
 })
 
 
-test('publish restores the source feature when release insertion is rejected by NX', () => {
+test('publish moves source to release atomically inside one Redis script', () => {
   const source = read('pages/api/publish.ts')
-  assert.match(source, /const added = await redis\.zadd/)
-  assert.match(source, /if \(!added\)/)
-  assert.match(source, /await redis\.zadd\([\s\S]*member: featureMember/)
+  assert.match(source, /PUBLISH_FEATURE_SCRIPT/)
+  assert.match(source, /redis\.call\('ZSCORE', KEYS\[1\], ARGV\[1\]\)/)
+  assert.match(source, /redis\.call\('ZSCORE', KEYS\[1\], ARGV\[2\]\)/)
+  assert.match(source, /redis\.call\('ZREM', KEYS\[1\], ARGV\[1\]\)/)
+  assert.match(source, /redis\.call\('ZADD', KEYS\[1\], score, ARGV\[2\]\)/)
+  assert.match(source, /await redis\.eval\(/)
+  assert.match(source, /FEATURE_NOT_FOUND/)
   assert.match(source, /FEATURE_CONFLICT/)
-  const remove = source.indexOf('redis.zrem')
-  const releaseAdd = source.indexOf('const added = await redis.zadd', remove)
-  const restore = source.indexOf('member: featureMember', releaseAdd)
-  assert.ok(remove >= 0 && releaseAdd > remove && restore > releaseAdd)
+  assert.doesNotMatch(source, /await redis\.zscore\(databaseName, featureMember\)/)
 })
