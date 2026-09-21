@@ -2,6 +2,21 @@ import { FEATURE_TYPE } from 'lib/const'
 import redis, { databaseName } from 'lib/redis'
 import authenticate from 'lib/authenticate'
 
+const PUBLISH_FEATURE_SCRIPT = `
+local score = redis.call('ZSCORE', KEYS[1], ARGV[1])
+if not score then
+  return 'NOT_FOUND'
+end
+
+if redis.call('ZSCORE', KEYS[1], ARGV[2]) then
+  return 'CONFLICT'
+end
+
+redis.call('ZREM', KEYS[1], ARGV[1])
+redis.call('ZADD', KEYS[1], score, ARGV[2])
+return 'OK'
+`
+
 export default authenticate(async (req, res) => {
   if (req.method !== 'POST') {
     res.setHeader('Allow', 'POST')
@@ -33,50 +48,33 @@ export default authenticate(async (req, res) => {
 
   const feature = { title, createdAt, user, status }
   const featureMember = JSON.stringify(feature)
+  const releaseMember = JSON.stringify({
+    ...feature,
+    status: FEATURE_TYPE.RELEASE
+  })
 
   try {
-    const score = await redis.zscore(databaseName, featureMember)
-    if (score === null) {
+    const publishResult = String(
+      await redis.eval(
+        PUBLISH_FEATURE_SCRIPT,
+        [databaseName],
+        [featureMember, releaseMember]
+      )
+    )
+
+    if (publishResult === 'NOT_FOUND') {
       return res.status(404).json({ error: 'FEATURE_NOT_FOUND' })
     }
 
-    const removed = await redis.zrem(databaseName, featureMember)
-    if (!removed) {
-      return res.status(409).json({ error: 'FEATURE_CHANGED' })
+    if (publishResult === 'CONFLICT') {
+      return res.status(409).json({ error: 'FEATURE_CONFLICT' })
     }
 
-    try {
-      const added = await redis.zadd(
-        databaseName,
-        { nx: true },
-        {
-          score,
-          member: JSON.stringify({
-            ...feature,
-            status: FEATURE_TYPE.RELEASE
-          })
-        }
-      )
-
-      if (!added) {
-        await redis.zadd(
-          databaseName,
-          { nx: true },
-          { score, member: featureMember }
-        ).catch(() => undefined)
-        return res.status(409).json({ error: 'FEATURE_CONFLICT' })
-      }
-
-      await redis.del('s:' + featureMember).catch(() => undefined)
-    } catch {
-      await redis.zadd(
-        databaseName,
-        { nx: true },
-        { score, member: featureMember }
-      ).catch(() => undefined)
+    if (publishResult !== 'OK') {
       return res.status(500).json({ error: 'PUBLISH_FAILED' })
     }
 
+    await redis.del('s:' + featureMember).catch(() => undefined)
     return res.json({ body: 'success' })
   } catch {
     return res.status(500).json({ error: 'PUBLISH_FAILED' })
