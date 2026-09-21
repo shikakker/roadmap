@@ -109,3 +109,11 @@ No merge, production promotion, Auth0/Redis credential mutation, live roadmap da
 - Publish/remove clean obsolete Redis voter-set state after a successful mutation.
 - `tests/vote-integrity.test.mjs` guards release-vote closure and voter-set cleanup.
 \n
+
+## Latest P1 — atomic publish transition
+
+- Publish previously performed `ZSCORE -> ZREM -> ZADD` as separate Redis requests. A concurrent vote between the score read and removal could be accepted and then lost when the release member was created with the stale score.
+- Publish now executes existence check, release-conflict check, source removal and release insertion inside one Redis `EVAL` script against the roadmap sorted set.
+- The transition is atomic with respect to concurrent `ZINCRBY` votes; a release conflict returns 409 without removing the source member.
+- Existing voter-set cleanup remains best-effort after a successful atomic publish and does not affect the score transition.
+- `tests/privileged-mutations.test.mjs` guards the server-side atomic transition and forbids reintroducing the separate `ZSCORE` flow.
