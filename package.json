@@ -1,32 +1,50 @@
 {
   "name": "upstash-roadmap",
   "version": "0.1.0",
+  "private": true,
+  "engines": {
+    "node": "24.x",
+    "pnpm": "9.15.9"
+  },
+  "packageManager": "pnpm@9.15.9",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start"
+    "start": "next start",
+    "test": "node --test tests/*.test.mjs",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint . --max-warnings=0"
   },
   "dependencies": {
     "@auth0/auth0-react": "^1.9.0",
     "@tailwindcss/forms": "^0.5.0",
     "@upstash/redis": "^1.0.3",
     "luxon": "^2.3.1",
-    "next": "^12.1.4",
+    "next": "15.5.24",
     "next-themes": "^0.1.1",
-    "react": "18.0.0",
-    "react-dom": "18.0.0",
+    "react": "18.2.0",
+    "react-dom": "18.2.0",
     "react-toastify": "^7.0.4",
     "swr": "^1.2.2",
     "yup": "^0.32.11"
   },
   "devDependencies": {
-    "@types/node": "^17.0.23",
-    "@types/react": "^17.0.43",
-    "@types/react-dom": "^17.0.14",
+    "@eslint/eslintrc": "3.3.7",
+    "@eslint/js": "9.39.5",
+    "@types/node": "^20.17.0",
+    "@types/react": "^18.2.79",
+    "@types/react-dom": "^18.2.25",
     "autoprefixer": "^10.4.4",
+    "eslint": "9.39.5",
+    "eslint-config-next": "15.5.24",
     "postcss": "^8.4.12",
     "prettier": "^2.6.2",
     "tailwindcss": "^3.0.23",
-    "typescript": "^4.6.3"
+    "typescript": "^5.7.3"
+  },
+  "pnpm": {
+    "overrides": {
+      "postcss": "8.5.28"
+    }
   }
 }

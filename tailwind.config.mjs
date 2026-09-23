@@ -1,4 +1,6 @@
-module.exports = {
+import forms from '@tailwindcss/forms'
+
+const config = {
   darkMode: 'class',
   content: [
     './pages/**/*.{js,ts,jsx,tsx}',
@@ -10,5 +12,7 @@ module.exports = {
   variants: {
     extend: {}
   },
-  plugins: [require('@tailwindcss/forms')]
+  plugins: [forms]
 }
+
+export default config
