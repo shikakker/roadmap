@@ -117,3 +117,13 @@ No merge, production promotion, Auth0/Redis credential mutation, live roadmap da
 - The transition is atomic with respect to concurrent `ZINCRBY` votes; a release conflict returns 409 without removing the source member.
 - Existing voter-set cleanup remains best-effort after a successful atomic publish and does not affect the score transition.
 - `tests/privileged-mutations.test.mjs` guards the server-side atomic transition and forbids reintroducing the separate `ZSCORE` flow.
+
+## 2026-09-23 verification refresh
+
+- Runtime head remains `90802b90ec815af94eb7e0f53ee262fd86835271`; no new P0/P1 was identified in the inspected publish/vote integrity paths.
+- GitHub Quality run `35560477363`: **SUCCESS**.
+- Exact-head Vercel status: **SUCCESS**.
+- Existing atomic publish transition and vote compensation remain intact.
+- Remaining gates are browser/Auth0/Redis E2E and interactive responsive/accessibility verification.
+
+Status remains **PARTIAL** only because those external/browser gates are not yet proven. Keep Draft; no merge or production data mutation.
